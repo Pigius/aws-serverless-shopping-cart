@@ -116,7 +116,7 @@ Resources:
     Type: AWS::VerifiedPermissions::PolicyStore
     Properties:
       Schema:
-        CedarJson: '{"Bookstore":{"entityTypes":{"Book":{"shape":{"type":"Record","attributes":{}},"memberOfTypes":[]},"Role":{"shape":{"attributes":{},"type":"Record"},"memberOfTypes":[]},"User":{"shape":{"attributes":{},"type":"Record"},"memberOfTypes":["Role"]}},"actions":{"View":{"memberOf":[],"appliesTo":{"resourceTypes":["Book"],"context":{"attributes":{},"type":"Record"},"principalTypes":["User"]}}}}}'
+        CedarJson: '{"Bookstore":{"entityTypes":{"Book":{"shape":{"type":"Record","attributes":{"owner":{"name":"User","required":true,"type":"Entity"}}},"memberOfTypes":[]},"Role":{"shape":{"attributes":{},"type":"Record"},"memberOfTypes":[]},"User":{"shape":{"attributes":{},"type":"Record"},"memberOfTypes":["Role"]}},"actions":{"View":{"memberOf":[],"appliesTo":{"resourceTypes":["Book"],"context":{"attributes":{},"type":"Record"},"principalTypes":["User"]}}}}}'
       ValidationSettings:
         Mode: STRICT
 
@@ -144,6 +144,19 @@ Resources:
             action in [Bookstore::Action::"View"],
             resource
             );'
+  RbacResourceOwnerStaticPolicy:
+    Type: AWS::VerifiedPermissions::Policy
+    Properties:
+      PolicyStoreId: !Ref MyPolicyStore
+      Definition:
+        Static:
+          Description: "Allows the publisher to see the books he has published"
+          Statement: 'permit (
+            principal in Bookstore::Role::"publisher",
+            action in [Bookstore::Action::"View"],
+            resource
+            )
+            when { principal == resource.owner };'
 
   UtilsLayer:
     Type: AWS::Serverless::LayerVersion
