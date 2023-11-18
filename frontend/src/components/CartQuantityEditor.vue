@@ -4,60 +4,34 @@
       type="text"
       v-if="edit"
       class="cart-quantity-input text-center"
-      :class="{ 'input-error': $v.quantity.$error }"
-      v-model.trim="$v.quantity.$model"
-      @focus="oldquantity=$event.target.value, $event.target.select()"
-      @blur="submit($event, product)"
+      v-model.trim="quantity"
+      @focus="oldQuantity = $event.target.value, $event.target.select()"
+      @blur="edit = false"
       @keyup.enter="$event.target.blur()"
       v-focus
     />
     <div
       @click="edit = true;"
       v-else
-      v-bind:class="{ 'font-weight-light': quantity < 1 }"
       class="pl-2 pr-2 noselect"
-    >{{quantity}}</div>
+    >{{ quantity }}</div>
   </div>
 </template>
 
 <script>
-import { validationMixin } from "vuelidate";
-import { required, between, integer } from "vuelidate/lib/validators";
-
 export default {
-  props: ["value", "product"],
+  props: ["value"],
 
   data() {
     return {
       edit: false,
       quantity: this.value,
-      oldquantity: null
+      oldQuantity: null
     };
   },
-  methods: {
-    submit(event, product) {
-      this.quantity = event.target.value;
-      this.$v.quantity.$touch();
-      if (this.$v.$invalid) {
-        this.quantity = this.oldquantity
-        this.edit = false;
-      } else {
-        this.edit = false;
-        this.$emit("input", { quantity: this.quantity, product });
-      }
-    }
-  },
-  validations: {
-    quantity: {
-      required,
-      between: between(0, 500),
-      integer
-    }
-  },
-  mixins: [validationMixin],
   watch: {
-    value: function() {
-      this.quantity = this.value;
+    value: function(newVal) {
+      this.quantity = newVal;
     }
   },
   directives: {

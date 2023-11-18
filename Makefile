@@ -1,25 +1,21 @@
 all: backend frontend-build
 
-TEMPLATES = auth product-mock discounted-product-mock shoppingcart-service
+TEMPLATES = auth product
 
 REGION := $(shell python3 -c 'import boto3; print(boto3.Session().region_name)')
 ifndef S3_BUCKET
 ACCOUNT_ID := $(shell aws sts get-caller-identity --query Account --output text)
-S3_BUCKET = aws-serverless-shopping-cart-src-$(ACCOUNT_ID)-$(REGION)
+S3_BUCKET = avp-bookstore-src-$(ACCOUNT_ID)-$(REGION)
 endif
 
 
 backend: create-bucket
 	$(MAKE) -C backend TEMPLATE=auth S3_BUCKET=$(S3_BUCKET)
-	$(MAKE) -C backend TEMPLATE=product-mock S3_BUCKET=$(S3_BUCKET)
-	$(MAKE) -C backend TEMPLATE=discounted-product-mock S3_BUCKET=$(S3_BUCKET)
-	$(MAKE) -C backend TEMPLATE=shoppingcart-service S3_BUCKET=$(S3_BUCKET)
+	$(MAKE) -C backend TEMPLATE=product S3_BUCKET=$(S3_BUCKET)
 
 backend-delete:
 	$(MAKE) -C backend delete TEMPLATE=auth
-	$(MAKE) -C backend delete TEMPLATE=product-mock
-	$(MAKE) -C backend delete TEMPLATE=discounted-product-mock
-	$(MAKE) -C backend delete TEMPLATE=shoppingcart-service
+	$(MAKE) -C backend delete TEMPLATE=product
 
 backend-tests:
 	$(MAKE) -C backend tests

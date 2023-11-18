@@ -17,7 +17,7 @@ Parameters:
 
   SrcS3Bucket:
     Type: String
-    Description: S3 Bucket for source code storage  
+    Description: S3 Bucket for source code storage
 
 Resources:
   AmplifyRole:
@@ -37,112 +37,98 @@ Resources:
           PolicyDocument:
             Version: 2012-10-17
             Statement:
-              -
-                Effect: "Allow"
+              - Effect: "Allow"
                 Action:
-                    - "s3:PutObject"
-                    - "s3:GetObject"
-                    - "s3:CreateMultipartUpload"
-                    - "s3:ListBucket"
-                    - "s3:CreateBucket"
+                  - "s3:PutObject"
+                  - "s3:GetObject"
+                  - "s3:CreateMultipartUpload"
+                  - "s3:ListBucket"
+                  - "s3:CreateBucket"
                 Resource:
-                    - !Sub "arn:aws:s3:::${SrcS3Bucket}"
-                    - !Sub "arn:aws:s3:::${SrcS3Bucket}/*"
-              -
-                Effect: "Allow"
+                  - !Sub "arn:aws:s3:::${SrcS3Bucket}"
+                  - !Sub "arn:aws:s3:::${SrcS3Bucket}/*"
+              - Effect: "Allow"
                 Action:
-                    - "cloudformation:Describe*"
-                    - "cloudformation:Create*"
-                    - "cloudformation:Execute*"
+                  - "cloudformation:Describe*"
+                  - "cloudformation:Create*"
+                  - "cloudformation:Execute*"
                 Resource:
-                    - "*"
-              -
-                Effect: Allow
+                  - "*"
+              - Effect: Allow
                 Action:
                   - lambda:*
-                Resource: 
+                Resource:
                   - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:function:*"
                   - !Sub "arn:aws:lambda:${AWS::Region}:${AWS::AccountId}:layer:*"
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - lambda:GetLayerVersion
                 Resource:
                   - !Sub "arn:aws:lambda:${AWS::Region}:017000801446:layer:AWSLambdaPowertoolsPython*"
-              -
-                Effect: Allow
+              - Effect: Allow
                 Action:
                   - lambda:*EventSourceMapping
-                Resource: 
+                Resource:
                   - "*"
-              -
-                Effect: "Allow"
+              - Effect: "Allow"
                 Action:
-                    - "cloudformation:GetTemplateSummary"
+                  - "cloudformation:GetTemplateSummary"
                 Resource: "*"
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "iam:GetRole"
-                      - "iam:Create*"
-                      - "iam:Delete*"
-                      - "iam:PassRole"
-                      - "iam:*RolePolicy"
-                  Resource:
-                      - "*"
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "apigateway:*"
-                  Resource:
-                      - "*"
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "ssm:*"
-                  Resource:
-                      - "*"       
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "dynamodb:List*"
-                      - "dynamodb:Describe*"
-                      - "dynamodb:TagResource"
-                      - "dynamodb:UnTagResource"
-                      - "dynamodb:Update*"
-                      - "dynamodb:Create*"
-                      - "dynamodb:DeleteTable"
-                  Resource:
-                      - "*"   
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "sqs:*"
-                  Resource:
-                      - "*"
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "cognito-idp:*"
-                  Resource:
-                      - "*"
-              -
-                  Effect: "Allow"
-                  Action:
-                      - "sts:GetCallerIdentity"
-                  Resource:
-                      - "*"
+              - Effect: "Allow"
+                Action:
+                  - "iam:GetRole"
+                  - "iam:Create*"
+                  - "iam:Delete*"
+                  - "iam:PassRole"
+                  - "iam:*RolePolicy"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "apigateway:*"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "ssm:*"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "dynamodb:List*"
+                  - "dynamodb:Describe*"
+                  - "dynamodb:TagResource"
+                  - "dynamodb:UnTagResource"
+                  - "dynamodb:Update*"
+                  - "dynamodb:Create*"
+                  - "dynamodb:DeleteTable"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "sqs:*"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "cognito-idp:*"
+                Resource:
+                  - "*"
+              - Effect: "Allow"
+                Action:
+                  - "sts:GetCallerIdentity"
+                Resource:
+                  - "*"
 
   AmplifyApp:
     Type: AWS::Amplify::App
     Properties:
       Name: CartApp
       Repository: !Ref Repository
-      Description: AWS serverless shopping cart
+      Description: AVP Bookstore
       OauthToken: !Ref OauthToken
       CustomRules:
-        -
-          Source: </^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>
+        - Source: </^[^.]+$|\.(?!(css|gif|ico|jpg|js|png|txt|svg|woff|ttf|map|json)$)([^.]+$)/>
           Target: /
           Status: 200
       EnvironmentVariables:
@@ -150,7 +136,7 @@ Resources:
           Value: !Ref SrcS3Bucket
       Tags:
         - Key: Name
-          Value: ShoppingCart
+          Value: AVPBookstore
       IAMServiceRole: !GetAtt AmplifyRole.Arn
 
   AmplifyBranch:
@@ -162,7 +148,7 @@ Resources:
       EnableAutoBuild: true
       Tags:
         - Key: Name
-          Value: shoppingcart-master
+          Value: avp-bookstore-master
         - Key: Branch
           Value: master
 
@@ -171,4 +157,8 @@ Outputs:
     Value: !GetAtt AmplifyApp.DefaultDomain
 
   MasterBranchUrl:
-    Value: !Join [ ".", [ !GetAtt AmplifyBranch.BranchName, !GetAtt AmplifyApp.DefaultDomain ]]
+    Value:
+      !Join [
+        ".",
+        [!GetAtt AmplifyBranch.BranchName, !GetAtt AmplifyApp.DefaultDomain],
+      ]

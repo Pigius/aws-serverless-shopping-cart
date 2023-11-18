@@ -2,9 +2,7 @@ import VueRouter from "vue-router";
 import Vue from "vue";
 import store from "@/store/store.js";
 import Home from "@/views/Home.vue";
-import DiscountedProducts from "@/views/DiscountedProducts.vue";
 
-import Payment from "@/views/Payment.vue";
 import Auth from "@/views/Auth.vue";
 import { components, AmplifyEventBus } from "aws-amplify-vue";
 
@@ -15,31 +13,19 @@ Vue.use(AmplifyPlugin, AmplifyModules);
 
 getUser().then((user) => {
   if (user) {
-    router
-      .push({
-        path: "/",
-      })
-      .catch(() => {});
+    router.push({ path: "/" }).catch(() => {});
   }
 });
 
 AmplifyEventBus.$on("authState", async (state) => {
   if (state === "signedOut") {
     store.commit("setUser", null);
-    store.dispatch("fetchCart");
     router
       .push({
-        path: "/",
+        path: "/auth",
       })
       .catch(() => {});
   } else if (state === "signedIn") {
-    getUser().then(() => {
-      if (store.state.cart.length > 0) {
-        store.dispatch("migrateCart");
-      } else {
-        store.dispatch("fetchCart");
-      }
-    });
     router
       .push({
         path:
@@ -74,13 +60,6 @@ const routes = [
     path: "/auth",
     name: "Authenticator",
     component: Auth,
-  },
-  {
-    path: "/checkout",
-    component: Payment,
-    meta: {
-      requiresAuth: true,
-    },
   },
 ];
 

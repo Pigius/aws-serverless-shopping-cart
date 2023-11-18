@@ -3,13 +3,13 @@ Transform: AWS::Serverless-2016-10-31
 Description: >
   product-service
 
-  SAM Template for mock product-service
+  SAM Template for product-service
 Parameters:
   AllowedOrigin:
     Type: "String"
-  ShoppingCartUserPoolId:
+  AvpBookstorePoolId:
     Type: "AWS::SSM::Parameter::Value<String>"
-    Default: "/serverless-shopping-cart-demo/auth/user-pool-id"
+    Default: "/avp-bookstore/auth/user-pool-id"
 Globals:
   Function:
     Timeout: 5
@@ -23,7 +23,7 @@ Globals:
       Variables:
         LOG_LEVEL: "DEBUG"
         ALLOWED_ORIGIN: !Ref AllowedOrigin
-        POWERTOOLS_SERVICE_NAME: product-mock
+        POWERTOOLS_SERVICE_NAME: product
         POWERTOOLS_METRICS_NAMESPACE: ecommerce-app
   Api:
     EndpointConfiguration: REGIONAL
@@ -73,7 +73,7 @@ Resources:
   GetProductsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: product-mock-service/
+      CodeUri: product-service/
       Handler: get_products.lambda_handler
       Role: !GetAtt GetProductsRole.Arn
       Layers:
@@ -82,10 +82,10 @@ Resources:
         Variables:
           LOG_LEVEL: "DEBUG"
           ALLOWED_ORIGIN: !Ref AllowedOrigin
-          POWERTOOLS_SERVICE_NAME: product-mock
+          POWERTOOLS_SERVICE_NAME: product
           POWERTOOLS_METRICS_NAMESPACE: ecommerce-app
           POLICY_STORE_ID: !Ref MyPolicyStore
-          USERPOOL_ID: !Ref ShoppingCartUserPoolId
+          USERPOOL_ID: !Ref AvpBookstorePoolId
       Events:
         ListCart:
           Type: Api
@@ -96,7 +96,7 @@ Resources:
   GetProductFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: product-mock-service/
+      CodeUri: product-service/
       Handler: get_product.lambda_handler
       Events:
         ListCart:
@@ -109,14 +109,14 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Name: /serverless-shopping-cart-demo/products/products-api-url
+      Name: /avp-bookstore/products/products-api-url
       Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
 
   MyPolicyStore:
     Type: AWS::VerifiedPermissions::PolicyStore
     Properties:
       Schema:
-        CedarJson: '{"Bookstore":{"entityTypes":{"Book":{"memberOfTypes":[],"shape":{"attributes":{"owner":{"required":true,"type":"Entity","name":"User"}},"type":"Record"}},"Role":{"memberOfTypes":[],"shape":{"attributes":{},"type":"Record"}},"User":{"memberOfTypes":["Role"],"shape":{"type":"Record","attributes":{"yearsAsMember":{"required":false,"type":"Long"}}}}},"actions":{"View":{"memberOf":[],"appliesTo":{"resourceTypes":["Book"],"context":{"attributes":{},"type":"Record"},"principalTypes":["User"]}}}}}'
+        CedarJson: '{"Bookstore":{"actions":{"View":{"appliesTo":{"resourceTypes":["Book"],"context":{"type":"Record","attributes":{"region":{"required":true,"name":"region","type":"String"}}},"principalTypes":["User"]},"memberOf":[]},"ViewPremiumOffers":{"appliesTo":{"principalTypes":["User"],"context":{"type":"Record","attributes":{"region":{"required":true,"type":"String","name":"region"}}},"resourceTypes":["Book"]},"memberOf":[]}},"entityTypes":{"Role":{"memberOfTypes":[],"shape":{"attributes":{},"type":"Record"}},"User":{"memberOfTypes":["Role"],"shape":{"type":"Record","attributes":{"yearsAsMember":{"type":"Long","required":false}}}},"Book":{"memberOfTypes":[],"shape":{"attributes":{"owner":{"type":"Entity","required":true,"name":"User"}},"type":"Record"}}}}}'
       ValidationSettings:
         Mode: STRICT
 
@@ -128,10 +128,11 @@ Resources:
         Static:
           Description: "Allows Admin to see all books"
           Statement: 'permit(
-            principal in Bookstore::Role::"admin",
+            principal in Bookstore::Role::"Admin",
             action in [Bookstore::Action::"View"],
             resource
             );'
+
   RbacAdminForbidStaticPolicy:
     Type: AWS::VerifiedPermissions::Policy
     Properties:
@@ -144,6 +145,7 @@ Resources:
             action in [Bookstore::Action::"View"],
             resource
             );'
+
   RbacResourceOwnerStaticPolicy:
     Type: AWS::VerifiedPermissions::Policy
     Properties:
@@ -152,24 +154,66 @@ Resources:
         Static:
           Description: "Allows the publisher to see the books he has published"
           Statement: 'permit (
-            principal in Bookstore::Role::"publisher",
+            principal in Bookstore::Role::"Publisher",
             action in [Bookstore::Action::"View"],
             resource
             )
             when { principal == resource.owner };'
-  AbacStaticPolicy:
+
+  RbacExplicitStaticPolicy:
     Type: AWS::VerifiedPermissions::Policy
     Properties:
       PolicyStoreId: !Ref MyPolicyStore
       Definition:
         Static:
-          Description: "Allows normal user with specific yearsAsMember attribute to see bestsellers"
+          Description: "Allows specific user to see specific book"
           Statement: 'permit (
-            principal in Bookstore::Role::"normal",
+            principal == Bookstore::User::"21fccbd2-75ad-4bac-84e6-1e2cecedeab3",
             action in [Bookstore::Action::"View"],
+            resource == Bookstore::Book::"em1oadaa-b22k-4ea8-kk33-f6m217604o3m");'
+
+  PermitAbacStaticPolicy:
+    Type: AWS::VerifiedPermissions::Policy
+    Properties:
+      PolicyStoreId: !Ref MyPolicyStore
+      Definition:
+        Static:
+          Description: "Allows customer with specific yearsAsMember attribute to see premium offers"
+          Statement: 'permit (
+            principal in Bookstore::Role::"Customer",
+            action in [Bookstore::Action::"ViewPremiumOffers"],
             resource
             )
             when { principal has yearsAsMember && principal.yearsAsMember >= 2 };'
+
+  DenyAbacStaticPolicy:
+    Type: AWS::VerifiedPermissions::Policy
+    Properties:
+      PolicyStoreId: !Ref MyPolicyStore
+      Definition:
+        Static:
+          Description: "Denies customer with specific yearsAsMember attribute to see premium offers"
+          Statement: 'forbid (
+            principal in Bookstore::Role::"Customer",
+            action in [Bookstore::Action::"ViewPremiumOffers"],
+            resource
+            )
+            when { principal has yearsAsMember && principal.yearsAsMember < 2 };'
+
+  ContextStaticPolicy:
+    Type: AWS::VerifiedPermissions::Policy
+    Properties:
+      PolicyStoreId: !Ref MyPolicyStore
+      Definition:
+        Static:
+          Description: "Denies access for regions outside US"
+          Statement: 'forbid (
+            principal,
+            action in
+            [Bookstore::Action::"View", Bookstore::Action::"ViewPremiumOffers"],
+            resource
+            )
+            when { context.region != "US" };'
 
   UtilsLayer:
     Type: AWS::Serverless::LayerVersion
@@ -186,7 +230,7 @@ Resources:
       LogGroupName: !Sub "/aws/lambda/${GetProductsFunction}"
 Outputs:
   ProductApi:
-    Description: "API Gateway endpoint URL for Prod stage for Product Mock Service"
+    Description: "API Gateway endpoint URL for Prod stage for Product Service"
     Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod"
   MyPolicyStoreId:
     Description: "ID of the Policy Store"

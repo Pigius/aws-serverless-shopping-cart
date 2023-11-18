@@ -57,14 +57,13 @@
 </template>
 
 <script>
-import { mapState, mapGetters } from "vuex";
 import { validationMixin } from "vuelidate";
 import { required, helpers } from "vuelidate/lib/validators";
 
 const ccvalidate = helpers.regex(
   "alpha",
   /(\d{4} *\d{4} *\d{4} *\d{4})/
-); /* I know, I know... */
+);
 
 export default {
   data() {
@@ -95,16 +94,14 @@ export default {
     submit() {
       this.$v.$touch();
       if (this.$v.$invalid) {
-        console.log("invalid form"); // eslint-disable-line no-console
+        console.log("invalid form");
       } else {
-        this.$store.dispatch("checkoutCart")
-        // TODO: redirect to confirmation
+        console.log("Form submitted");
+        // Form submission logic goes here
       }
     }
   },
   computed: {
-    ...mapGetters(["cartTotalAmount", "getCart"]),
-    ...mapState(["cart"]),
     cardNumberErrors() {
       const errors = [];
       if (!this.$v.cardNumber.$dirty) return errors;
@@ -134,4 +131,3 @@ export default {
   }
 };
 </script>
-

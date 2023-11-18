@@ -13,7 +13,7 @@
         <v-btn to="/auth" v-if="!currentUser" text class="ml-2">Sign In</v-btn>
         <cart-button @drawerChange="toggleDrawer" />
         <div class="sign-out">
-          <amplify-sign-out v-if="currentUser" class="Form--signout pl-2"></amplify-sign-out>
+          <amplify-sign-out v-if="currentUser" @click="logout" class="Form--signout pl-2"></amplify-sign-out>
         </div>
       </v-toolbar-items>
     </v-app-bar>
@@ -40,7 +40,7 @@
 </template>
 
 <script>
-import { mapGetters, mapState } from "vuex";
+import { mapGetters } from "vuex";
 
 export default {
   name: "app",
@@ -49,16 +49,14 @@ export default {
       drawer: null
     };
   },
-  mounted() {
-    this.$store.dispatch("fetchCart");
-  },
   computed: {
-    ...mapGetters(["cartSize", "currentUser"]),
-    ...mapState(["cartLoading"])
+    ...mapGetters(["currentUser"])
   },
   methods: {
     logout() {
-      this.$store.dispatch("logout");
+      this.$store.dispatch("logout").then(() => {
+        this.$router.push('/auth');
+      });
     },
     toggleDrawer() {
       this.drawer = !this.drawer;

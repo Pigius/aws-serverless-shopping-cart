@@ -1,52 +1,13 @@
-import calendar
-import datetime
 import os
-import uuid
-from decimal import Decimal
-from http.cookies import SimpleCookie
-
-from aws_lambda_powertools import Tracer
-
 import cognitojwt
-
-tracer = Tracer()
-
-HEADERS = {
-    "Access-Control-Allow-Origin": os.environ.get("ALLOWED_ORIGIN"),
-    "Access-Control-Allow-Headers": "Content-Type,Authorization,authorization",
-    "Access-Control-Allow-Methods": "OPTIONS,POST,GET",
-    "Access-Control-Allow-Credentials": True,
-}
-
+from aws_lambda_powertools import Logger
 
 class NotFoundException(Exception):
     pass
 
+logger = Logger()
 
-@tracer.capture_method
-def handle_decimal_type(obj):
-    """
-    json serializer which works with Decimal types returned from DynamoDB.
-    """
-    if isinstance(obj, Decimal):
-        if float(obj).is_integer():
-            return int(obj)
-        else:
-            return float(obj)
-    raise TypeError
-
-
-@tracer.capture_method
-def generate_ttl(days=1):
-    """
-    Generate epoch timestamp for number days in future
-    """
-    future = datetime.datetime.utcnow() + datetime.timedelta(days=days)
-    return calendar.timegm(future.utctimetuple())
-
-
-@tracer.capture_method
-def get_user_claims(jwt_token):
+def get_user_claims(jwt_token: str, source_ip: str) -> dict:
     """
     Validate JWT claims & retrieve user identifier along with additional claims
     """
@@ -54,62 +15,27 @@ def get_user_claims(jwt_token):
         verified_claims = cognitojwt.decode(
             jwt_token, os.environ["AWS_REGION"], os.environ["USERPOOL_ID"]
         )
-    except (cognitojwt.CognitoJWTException, ValueError):
+    except (cognitojwt.CognitoJWTException, ValueError) as e:
+        logger.error(f"JWT validation error: {e}")
         return {}
-    print("verified_claims", verified_claims)
 
     claims = {
         "username": verified_claims.get("cognito:username"),
         "role":  verified_claims.get("custom:role"),
-        "yearsAsMember": verified_claims.get("custom:yearsAsMember")
+        "yearsAsMember": verified_claims.get("custom:yearsAsMember"),
+        "region": mapIPtoRegion(source_ip, verified_claims.get("cognito:username")),
+
     }
-    print("claims", claims)
+    logger.info(f"Claims retrieved: {claims}")
 
     return claims
 
-@tracer.capture_method
-def get_user_sub(jwt_token):
+def mapIPtoRegion(ip_address: str, username: str) -> str:
     """
-    Validate JWT claims & retrieve user identifier
+    Naively maps an IP address to a country code based on the username.
+    Returns 'UK' if the username is 'Toby', otherwise defaults to 'US'.
     """
-    try:
-        verified_claims = cognitojwt.decode(
-            jwt_token, os.environ["AWS_REGION"], os.environ["USERPOOL_ID"]
-        )
-    except (cognitojwt.CognitoJWTException, ValueError):
-        verified_claims = {}
-
-    return verified_claims.get("sub")
-
-@tracer.capture_method
-def get_cart_id(event_headers):
-    """
-    Retrieve cart_id from cookies if it exists, otherwise set and return it
-    """
-    cookie = SimpleCookie()
-    try:
-        cookie.load(event_headers["cookie"])
-        cart_cookie = cookie["cartId"].value
-        generated = False
-    except KeyError:
-        cart_cookie = str(uuid.uuid4())
-        generated = True
-
-    return cart_cookie, generated
-
-
-@tracer.capture_method
-def get_headers(cart_id):
-    """
-    Get the headers to add to response data
-    """
-    headers = HEADERS
-    cookie = SimpleCookie()
-    cookie["cartId"] = cart_id
-    cookie["cartId"]["max-age"] = (60 * 60) * 24  # 1 day
-    cookie["cartId"]["secure"] = True
-    cookie["cartId"]["httponly"] = True
-    cookie["cartId"]["samesite"] = "None"
-    cookie["cartId"]["path"] = "/"
-    headers["Set-Cookie"] = cookie["cartId"].OutputString()
-    return headers
+    if username == "Toby":
+        return "UK"
+    else:
+        return "US"

@@ -33,7 +33,7 @@ export default {
                 type: 'string'
               },
               {
-                label: 'Role',
+                label: 'Role (Admin, Customer, Publisher)',
                 key: 'custom:role',
                 required: true,
                 displayOrder: 4,

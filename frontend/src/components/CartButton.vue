@@ -1,26 +1,12 @@
 <template>
-  <v-btn fixed right rounded small @click.stop="toggleDrawer" text icon x-large>
-    <v-badge overlap color="accent" v-bind:class="{ 'animated-pulse': cartLoading > 0 }">
-      <div slot="badge">{{cartSize}}</div>
-      <v-icon color="black" x-large>mdi-cart</v-icon>
-    </v-badge>
+  <v-btn fixed right rounded small text icon x-large @click.stop="toggleDrawer">
+    <v-icon color="black" x-large>mdi-cart</v-icon>
   </v-btn>
 </template>
 
 <script>
-import { mapGetters, mapState } from "vuex";
-
 export default {
   name: "cart-button",
-  computed: {
-    ...mapGetters(["cartSize"]),
-    ...mapState(["cartLoading"])
-  },
-  data() {
-    return {
-      drawer: false
-    };
-  },
   methods: {
     toggleDrawer() {
       this.$emit("drawerChange");

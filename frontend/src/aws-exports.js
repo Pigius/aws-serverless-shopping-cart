@@ -7,16 +7,8 @@ const awsmobile = {
   API: {
     endpoints: [
       {
-        name: "CartAPI",
-        endpoint: process.env.VUE_APP_CART_API_URL,
-      },
-      {
         name: "ProductAPI",
         endpoint: process.env.VUE_APP_PRODUCTS_API_URL,
-      },
-      {
-        name: "DiscountedProductAPI",
-        endpoint: process.env.VUE_APP_DISCOUNTED_PRODUCTS_API_URL,
       },
     ],
   },
