@@ -193,57 +193,57 @@ def handle_batch_is_authorized(user_info):
     # Process responses and determine which books to return
 
 def construct_authz_request_for_publisher(user_info, book_id, owner_name):
-{
-    "policyStoreId": os.environ.get("POLICY_STORE_ID"),
-    "principal": {
-        "entityType": "Bookstore::User",
-        "entityId": user_info.get("username", "")
-    },
-    "action": {
-        "actionType": "Bookstore::Action",
-        "actionId": "View"
-    },
-    "resource": {
-        "entityType": "Bookstore::Book",
-        "entityId": book_id
-    },
-    "entities": {
-        "entityList": [
-        {
-            "identifier": {
+    return {
+        "policyStoreId": os.environ.get("POLICY_STORE_ID"),
+        "principal": {
             "entityType": "Bookstore::User",
-            "entityId": "Dante"
-            },
-            "attributes": {},
-            "parents": [
-            {
-                "entityType": "Bookstore::Role",
-                "entityId": "Publisher"
-            }
-            ]
+            "entityId": user_info.get("username", "")
         },
-        {
-            "identifier": {
+        "action": {
+            "actionType": "Bookstore::Action",
+            "actionId": "View"
+        },
+        "resource": {
             "entityType": "Bookstore::Book",
             "entityId": book_id
-            },
-            "attributes": {
-            "owner": {
-                "entityIdentifier": {
-                "entityType": "Bookstore::User",
-                "entityId": owner_name
+        },
+        "entities": {
+            "entityList": [
+                {
+                    "identifier": {
+                        "entityType": "Bookstore::User",
+                        "entityId": "Dante"
+                    },
+                    "attributes": {},
+                    "parents": [
+                        {
+                            "entityType": "Bookstore::Role",
+                            "entityId": "Publisher"
+                        }
+                    ]
+                },
+                {
+                    "identifier": {
+                        "entityType": "Bookstore::Book",
+                        "entityId": book_id
+                    },
+                    "attributes": {
+                        "owner": {
+                            "entityIdentifier": {
+                                "entityType": "Bookstore::User",
+                                "entityId": owner_name
+                            }
+                        }
+                    },
+                    "parents": []
+                }
+            ]
+        },
+        "context": {
+            "contextMap": {
+                "region": {
+                    "string": "US"
                 }
             }
-            },
-            "parents": []
-        }
-        ]
-    },
-    "context": {
-        "contextMap": {
-        "region": {
-            "string": "US"
-        }
-        }
         }
     }
