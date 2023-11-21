@@ -180,17 +180,76 @@ def filter_books_based_on_policy(response, user_info, withoutPremiumOffers=False
         return []
 
 def handle_batch_is_authorized(user_info):
-    # Construct two authz requests for batch processing
-    authz_request_1 = construct_authz_request_for_publisher(user_info, "fn2padaa-c33l-4ea8-ll44-g7n217604p4n", "Dante")
-    authz_request_2 = construct_authz_request_for_publisher(user_info, "em1oadaa-b22k-4ea8-kk33-f6m217604o3m", "William")
-    print('authz_request_1', authz_request_1)
-    print('authz_request_2', authz_request_2)
+    batch_request = {
+        'policyStoreId': 'L9y4kqxXJ4xC3fX3ksjait',
+        'entities': {
+            'entityList': [
+                {
+                    'identifier': {
+                        'entityType': 'Bookstore::User',
+                        'entityId': 'Dante'
+                    },
+                    'attributes': {},
+                    'parents': [
+                        {
+                            'entityType': 'Bookstore::Role',
+                            'entityId': 'Publisher'
+                        }
+                    ]
+                }
+            ]
+        },
+        'requests': [
+            {
+                'principal': {
+                    'entityType': 'Bookstore::User',
+                    'entityId': 'Dante'
+                },
+                'action': {
+                    'actionType': 'Bookstore::Action',
+                    'actionId': 'View'
+                },
+                'resource': {
+                    'entityType': 'Bookstore::Book',
+                    'entityId': 'em1oadaa-b22k-4ea8-kk33-f6m217604o3m'
+                },
+                'context': {
+                    'contextMap': {
+                        'region': {
+                            'string': 'US'
+                        }
+                    }
+                }
+            },
+            {
+                'principal': {
+                    'entityType': 'Bookstore::User',
+                    'entityId': 'Dante'
+                },
+                'action': {
+                    'actionType': 'Bookstore::Action',
+                    'actionId': 'View'
+                },
+                'resource': {
+                    'entityType': 'Bookstore::Book',
+                    'entityId': 'fn2padaa-c33l-4ea8-ll44-g7n217604p4n'
+                },
+                'context': {
+                    'contextMap': {
+                        'region': {
+                            'string': 'US'
+                        }
+                    }
+                }
+            }
+        ]
+    }
 
-    # Call batch_is_authorized with both requests
-    responses = verified_permissions_client.batch_is_authorized([authz_request_1, authz_request_2])
+    # Call batch_is_authorized with the batch request
+    responses = verified_permissions_client.batch_is_authorized(**batch_request)
+
+    # Print responses
     print('responses', responses)
-
-    # Process responses and determine which books to return
 
 def construct_authz_request_for_publisher(user_info, book_id, owner_name):
     return {
