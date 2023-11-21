@@ -152,6 +152,28 @@ def determine_product_list(response, user_info):
             return []  # Return an empty list for denied access
     return books['books']  # Return all books if no specific policy applies
 
+def determine_product_list_for_publisher(responses, user_info, books):
+    allowed_books = []
+
+    for response in responses.get('results', []):
+        if response.get('decision') == 'ALLOW':
+            policy_description = get_policy_description(response)
+
+            # Check if the policy allows the publisher to see the books they have published
+            if policy_description == "Allows the publisher to see the books he has published":
+                allowed_books.extend([book for book in books['books'] if book['publisher'] == user_info['username']])
+
+            # Check if the policy allows a specific user to see a specific book
+            elif policy_description == "Allows specific user to see specific book":
+                book_id = response['request']['resource']['entityId']
+                allowed_books.extend([book for book in books['books'] if book['id'] == book_id])
+
+    # Remove duplicates if any
+    allowed_books = [dict(t) for t in {tuple(book.items()) for book in allowed_books}]
+
+    return allowed_books
+
+
 def get_policy_description(response):
     # Extract the policy ID from the response
     logger.info(f"response info: {response}")
@@ -178,6 +200,7 @@ def filter_books_based_on_policy(response, user_info, withoutPremiumOffers=False
         return books['books']
     else:
         return []
+
 
 def handle_batch_is_authorized(user_info):
     batch_request = {
@@ -279,24 +302,3 @@ def handle_batch_is_authorized(user_info):
     responses = verified_permissions_client.batch_is_authorized(**batch_request)
     logger.info(f"Bulk authz response: {responses}")
     determine_product_list_for_publisher(responses, user_info, books)
-
-    def determine_product_list_for_publisher(responses, user_info, books):
-        allowed_books = []
-
-        for response in responses.get('results', []):
-            if response.get('decision') == 'ALLOW':
-                policy_description = get_policy_description(response)
-
-                # Check if the policy allows the publisher to see the books they have published
-                if policy_description == "Allows the publisher to see the books he has published":
-                    allowed_books.extend([book for book in books['books'] if book['publisher'] == user_info['username']])
-
-                # Check if the policy allows a specific user to see a specific book
-                elif policy_description == "Allows specific user to see specific book":
-                    book_id = response['request']['resource']['entityId']
-                    allowed_books.extend([book for book in books['books'] if book['id'] == book_id])
-
-        # Remove duplicates if any
-        allowed_books = [dict(t) for t in {tuple(book.items()) for book in allowed_books}]
-
-        return allowed_books
