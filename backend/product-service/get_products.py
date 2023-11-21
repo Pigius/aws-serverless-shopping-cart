@@ -34,17 +34,22 @@ def lambda_handler(event: dict, context: LambdaContext):
         user_info = get_user_claims(jwt_token, source_ip)
 
     logger.info(f"User info: {user_info}")
+    product_list = []
 
-    # Construct the authz_request
-    authz_request = construct_authz_request(user_info)
-    logger.info(f"Authz request: {authz_request}")
+    if user_info["role"] == 'Publisher' and user_info["username"] == 'Dante':
+        # Handle batch authorization for publisher Dante
+        product_list = handle_batch_is_authorized(user_info)
+    else:
+        # Construct the authz_request for other scenarios
+        authz_request = construct_authz_request(user_info)
+        logger.info(f"Authz request: {authz_request}")
 
-    # Make the isAuthorized call
-    response = verified_permissions_client.is_authorized(**authz_request)
-    logger.info(f"Authorization response: {response}")
+        # Make the isAuthorized call
+        response = verified_permissions_client.is_authorized(**authz_request)
+        logger.info(f"Authorization response: {response}")
 
-    # Determine which product list to return
-    product_list = determine_product_list(response, user_info)
+        # Determine which product list to return
+        product_list = determine_product_list(response, user_info)
 
     logger.info("Returning product list")
     return {
@@ -173,3 +178,72 @@ def filter_books_based_on_policy(response, user_info, withoutPremiumOffers=False
         return books['books']
     else:
         return []
+
+def handle_batch_is_authorized(user_info):
+    # Construct two authz requests for batch processing
+    authz_request_1 = construct_authz_request_for_publisher(user_info, "fn2padaa-c33l-4ea8-ll44-g7n217604p4n", "Dante")
+    authz_request_2 = construct_authz_request_for_specific_book(user_info, "em1oadaa-b22k-4ea8-kk33-f6m217604o3m", "William")
+    print('authz_request_1', authz_request_1)
+    print('authz_request_2', authz_request_2)
+
+    # Call batch_is_authorized with both requests
+    responses = verified_permissions_client.batch_is_authorized([authz_request_1, authz_request_2])
+    print('responses', responses)
+
+    # Process responses and determine which books to return
+
+def construct_authz_request_for_publisher(user_info, book_id, owner_name):
+{
+    "policyStoreId": os.environ.get("POLICY_STORE_ID"),
+    "principal": {
+        "entityType": "Bookstore::User",
+        "entityId": user_info.get("username", "")
+    },
+    "action": {
+        "actionType": "Bookstore::Action",
+        "actionId": "View"
+    },
+    "resource": {
+        "entityType": "Bookstore::Book",
+        "entityId": book_id
+    },
+    "entities": {
+        "entityList": [
+        {
+            "identifier": {
+            "entityType": "Bookstore::User",
+            "entityId": "Dante"
+            },
+            "attributes": {},
+            "parents": [
+            {
+                "entityType": "Bookstore::Role",
+                "entityId": "Publisher"
+            }
+            ]
+        },
+        {
+            "identifier": {
+            "entityType": "Bookstore::Book",
+            "entityId": book_id
+            },
+            "attributes": {
+            "owner": {
+                "entityIdentifier": {
+                "entityType": "Bookstore::User",
+                "entityId": owner_name
+                }
+            }
+            },
+            "parents": []
+        }
+        ]
+    },
+    "context": {
+        "contextMap": {
+        "region": {
+            "string": "US"
+        }
+        }
+        }
+    }
