@@ -196,6 +196,36 @@ def handle_batch_is_authorized(user_info):
                             'entityId': 'Publisher'
                         }
                     ]
+                },
+                {
+                    'identifier': {
+                        'entityType': 'Bookstore::Book',
+                        'entityId': 'em1oadaa-b22k-4ea8-kk33-f6m217604o3m'
+                    },
+                    'attributes': {
+                        'owner': {
+                            'entityIdentifier': {
+                                'entityType': 'Bookstore::User',
+                                'entityId': 'William'
+                            }
+                        }
+                    },
+                    'parents': []
+                },
+                {
+                    'identifier': {
+                        'entityType': 'Bookstore::Book',
+                        'entityId': 'fn2padaa-c33l-4ea8-ll44-g7n217604p4n'
+                    },
+                    'attributes': {
+                        'owner': {
+                            'entityIdentifier': {
+                                'entityType': 'Bookstore::User',
+                                'entityId': 'Dante'
+                            }
+                        }
+                    },
+                    'parents': []
                 }
             ]
         },
@@ -250,6 +280,7 @@ def handle_batch_is_authorized(user_info):
 
     # Print responses
     print('responses', responses)
+
 
 def construct_authz_request_for_publisher(user_info, book_id, owner_name):
     return {
