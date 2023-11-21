@@ -52,6 +52,7 @@ def lambda_handler(event: dict, context: LambdaContext):
         product_list = determine_product_list(response, user_info)
 
     logger.info("Returning product list")
+    print('product_list', product_list)
     return {
         "statusCode": 200,
         "headers": HEADERS,
@@ -154,22 +155,28 @@ def determine_product_list(response, user_info):
 
 def determine_product_list_for_publisher(responses, user_info, books):
     allowed_books = []
-
+    print('determine_product_list_for_publisher responses', responses)
     for response in responses.get('results', []):
         if response.get('decision') == 'ALLOW':
             policy_description = get_policy_description(response)
+            print('policy_description responses', policy_description)
 
             # Check if the policy allows the publisher to see the books they have published
             if policy_description == "Allows the publisher to see the books he has published":
-                allowed_books.extend([book for book in books['books'] if book['publisher'] == user_info['username']])
+                print('policy_description', policy_description)
+                print('books', books)
 
+                allowed_books.extend([book for book in books['books'] if book['publisher'] == user_info['username']])
+                print('allowed_books', allowed_books)
             # Check if the policy allows a specific user to see a specific book
             elif policy_description == "Allows specific user to see specific book":
                 book_id = response['request']['resource']['entityId']
+                print('book_id', book_id)
                 allowed_books.extend([book for book in books['books'] if book['id'] == book_id])
-
+                print('allowed_books 2', allowed_books)
     # Remove duplicates if any
     allowed_books = [dict(t) for t in {tuple(book.items()) for book in allowed_books}]
+    print('allowed_books 3', allowed_books)
 
     return allowed_books
 
