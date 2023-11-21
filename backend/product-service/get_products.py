@@ -182,7 +182,7 @@ def filter_books_based_on_policy(response, user_info, withoutPremiumOffers=False
 def handle_batch_is_authorized(user_info):
     # Construct two authz requests for batch processing
     authz_request_1 = construct_authz_request_for_publisher(user_info, "fn2padaa-c33l-4ea8-ll44-g7n217604p4n", "Dante")
-    authz_request_2 = construct_authz_request_for_specific_book(user_info, "em1oadaa-b22k-4ea8-kk33-f6m217604o3m", "William")
+    authz_request_2 = construct_authz_request_for_publisher(user_info, "em1oadaa-b22k-4ea8-kk33-f6m217604o3m", "William")
     print('authz_request_1', authz_request_1)
     print('authz_request_2', authz_request_2)
 
